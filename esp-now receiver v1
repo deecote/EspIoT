@@ -1,0 +1,52 @@
+#include <ESP8266WiFi.h>
+#include <espnow.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+uint8_t senderMac[] = {0xB4, 0xE6, 0x2D, 0x53, 0xD3, 0x78};
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.mode(WIFI_STA);
+  
+  lcd.init();
+  lcd.backlight();
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Ready to receive");
+  
+  if (esp_now_init() != 0) {
+    Serial.println("ESP-NOW initialization failed!");
+    return;
+  }
+  
+  esp_now_set_self_role(ESP_NOW_ROLE_SLAVE);
+  esp_now_register_recv_cb(onDataRecv);
+}
+
+void loop() {
+  // Nothing to do here
+}
+
+void onDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len) {
+  char receivedString[len + 1];
+  memcpy(receivedString, incomingData, len);
+  receivedString[len] = 0;
+  Serial.print("Received data: ");
+  Serial.println(receivedString);
+  
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  if (strlen(receivedString) > 16) {
+    lcd.print(String(receivedString).substring(0, 16));
+    lcd.setCursor(0, 1);
+    lcd.print(String(receivedString).substring(16));
+  } else {
+    lcd.print(receivedString);
+  }
+  
+  String ack = "ACK";
+  esp_now_send(senderMac, (uint8_t *)ack.c_str(), ack.length());
+}
