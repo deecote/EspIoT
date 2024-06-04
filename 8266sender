@@ -31,5 +31,6 @@ void loop() {
     // Send data via ESP-NOW to broadcast address
     uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; // Broadcast address
     esp_now_send(broadcastAddress, (uint8_t *)data.c_str(), data.length());
+    Serial.println("Sending data: " + data);
   }
 }
