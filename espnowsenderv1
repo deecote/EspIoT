@@ -1,0 +1,60 @@
+#include <ESP8266WiFi.h>
+#include <espnow.h>
+
+uint8_t receiverMac[] = {0xBC, 0xDD, 0xC2, 0x16, 0xBC, 0x5E};
+
+bool dataReceivedAck = false;
+unsigned long lastSendTime = 0;
+const unsigned long timeout = 5000; // 5 seconds timeout
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.mode(WIFI_STA);
+  
+  if (esp_now_init() != 0) {
+    Serial.println("ESP-NOW initialization failed!");
+    return;
+  }
+  
+  esp_now_set_self_role(ESP_NOW_ROLE_CONTROLLER);
+  esp_now_register_recv_cb(onDataRecv);
+  esp_now_register_send_cb(onDataSent);
+  esp_now_add_peer(receiverMac, ESP_NOW_ROLE_SLAVE, 1, NULL, 0);
+
+  Serial.println("Ready to send data");
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    String text = Serial.readStringUntil('\n');
+    sendData(text);
+  }
+  
+  if (millis() - lastSendTime > timeout && !dataReceivedAck) {
+    Serial.println("Resending data due to timeout...");
+    sendData("Resend: " + String(text));
+  }
+}
+
+void sendData(String text) {
+  dataReceivedAck = false;
+  lastSendTime = millis();
+  esp_now_send(receiverMac, (uint8_t *)text.c_str(), text.length());
+}
+
+void onDataSent(uint8_t *macAddr, uint8_t sendStatus) {
+  Serial.print("Send Status: ");
+  Serial.println(sendStatus == 0 ? "Success" : "Failure");
+}
+
+void onDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len) {
+  char receivedString[len + 1];
+  memcpy(receivedString, incomingData, len);
+  receivedString[len] = 0;
+  Serial.print("Received data: ");
+  Serial.println(receivedString);
+  
+  if (String(receivedString) == "ACK") {
+    dataReceivedAck = true;
+  }
+}
