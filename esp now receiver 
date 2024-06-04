@@ -1,0 +1,25 @@
+#include <ESP8266WiFi.h>
+#include <espnow.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x27, 16, 2); // I2C address 0x27, 16 columns and 2 rows
+
+void setup() {
+    lcd.init();
+    lcd.backlight();
+    espNowInit();
+    espNowOnDataReceived(onDataReceived);
+}
+
+void onDataReceived(const uint8_t* mac, const uint8_t* data, int len) {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Received:");
+    lcd.setCursor(0, 1);
+    lcd.print((char*)data);
+}
+
+void loop() {
+    // Your other code here
+}
