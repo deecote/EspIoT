@@ -1,0 +1,46 @@
+#include <ESP8266WiFi.h>
+#include <espnow.h>
+#include <LiquidCrystal_I2C.h>
+
+#define LCD_ADDRESS 0x27 // Address of 1602 LCD I2C
+#define LCD_COLUMNS 16
+#define LCD_ROWS 2
+
+// Initialize the LCD object
+LiquidCrystal_I2C lcd(LCD_ADDRESS, LCD_COLUMNS, LCD_ROWS);
+
+// Callback function that will be called when data is received
+void OnDataReceived(uint8_t *mac_addr, uint8_t *data, uint8_t len) {
+  Serial.print("Received data: ");
+  Serial.write(data, len);
+  Serial.println();
+
+  // Display received data on the LCD
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Received:");
+  lcd.setCursor(0, 1);
+  lcd.print((char*)data);
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // Initialize ESP-NOW
+  if (esp_now_init() != 0) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+  // Register callback function for receiving data
+  esp_now_set_self_role(ESP_NOW_ROLE_SLAVE);
+  esp_now_register_recv_cb(OnDataReceived);
+
+  // Initialize LCD
+  lcd.init();
+  lcd.backlight();
+}
+
+void loop() {
+  // Keep listening for incoming data
+}
