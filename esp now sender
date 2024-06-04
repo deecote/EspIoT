@@ -1,0 +1,16 @@
+#include <ESP8266WiFi.h>
+#include <espnow.h>
+
+// Replace with your own MAC address
+uint8_t receiverMac[] = {0xXX, 0xXX, 0xXX, 0xXX, 0xXX, 0xXX};
+
+void setup() {
+    Serial.begin(115200);
+    WiFi.mode(WIFI_STA);
+    espNowInit();
+}
+
+void loop() {
+    String data = Serial.readStringUntil('\n');
+    espNowSend(receiverMac, data.c_str(), data.length());
+}
